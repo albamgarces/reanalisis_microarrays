@@ -1,30 +1,107 @@
 ---
 title: "Pipeline PEC1"
 author: "Alba Moya Garcés"
-date: "27 de abril de 2020"
-output: pdf_document
+date: '`r format(Sys.Date(),"%e de %B, %Y")`'
+output: 
+  pdf_document:
+    toc: yes
+nocite: |
+  @*
+bibliography: biblio_PEC1.bib
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include=FALSE, cache=TRUE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+```{r paquetesR, include=FALSE, message=FALSE}
+# require(knitr)
+# require(kableExtra)
 ```
 
-## Including Plots
 
-You can also embed plots, for example:
+1. Identificar que grupos hay y a qué grupo pertenece cada muestra.
+2. Control de calidad de los datos crudos
+3. Normalización
+4. [Control de calidad de los datos normalizados] (opcional)
+5. Filtraje no específico [opcional]
+6. Identificación de genes diferencialmente expresados
+7. Anotación de los resultados
+8. Comparación entre distintas comparaciones (si hay más de una comparación, ver que genes han sido seleccionados en más de una comparación)
+9. Análisis de significación biológica (“Gene Enrichment Analysis”)
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+Estudio elegido:
+
+**Gene expression in mitotic tissues of Drosophila larvae without centrosomes or too many centrosomes**
+
+
+La expresión genética de las líneas mutantes se compararon con ambas líneas salvajes de control. 
+
+
+
+- Tipo de microarrays que utilizan: se hibridaron con arrays *Affymetrix Drosophila Genoe 2.0*
+- Número de muestras y grupos que contiene el estudio: 
+
+Se diseccionaron tejidos mitóticos (cerebrales y de los discos imaginales) de 10 larvas de *Drosophila* en estadío 3:    
+
+| ausencia de centrosomas | | exceso de centrosomas | tipo salvaje | |
+| DSas-4 | DSas-6 | SakOE |  WT w67 | WT OregonR|  
+| | | | | |    
+
+
+Se extrajo el ARN de **tres réplicas** por cada línea (15 muestras en total)
+
+|GSM864362 |	brains and imaginal discs from D-Sas4 mutant 3rd instar Drosophila larvae | biological replicate 1|    
+
+|GSM864363 |	brains and imaginal discs from D-Sas4 mutant 3rd instar Drosophila larvae | biological replicate 2|    
+
+
+|GSM864364 	brains and imaginal discs from D-Sas4 mutant 3rd instar Drosophila larvae, biological replicate 3|
+|GSM864365 	brains and imaginal discs from D-Ssas6 mutant 3rd instar Drosophila larvae, biological replicate 1
+GSM864366 	brains and imaginal discs from D-Ssas6 mutant 3rd instar Drosophila larvae, biological replicate 2
+GSM864367 	brains and imaginal discs from D-Ssas6 mutant 3rd instar Drosophila larvae, biological replicate 3
+GSM864368 	brains and imaginal discs from Sak overexpressing 3rd instar Drosophila larvae, biological replicate 1
+GSM864369 	brains and imaginal discs from Sak overexpressing 3rd instar Drosophila larvae, biological replicate 2
+GSM864370 	brains and imaginal discs from Sak overexpressing 3rd instar Drosophila larvae, biological replicate 3
+GSM864371 	brains and imaginal discs from w67 wild type 3rd instar Drosophila larvae, biological replicate 1
+GSM864372 	brains and imaginal discs from w67 wild type 3rd instar Drosophila larvae, biological replicate 2
+GSM864373 	brains and imaginal discs from w67 wild type 3rd instar Drosophila larvae, biological replicate 3
+GSM864374 	brains and imaginal discs from OregonR wild type 3rd instar Drosophila larvae, biological replicate 1
+GSM864375 	brains and imaginal discs from OregonR wild type 3rd instar Drosophila larvae, biological replicate 2
+GSM864376 	brains and imaginal discs from OregonR wild type 3rd instar Drosophila larvae, biological replicate 3
+- Que pregunta principal persigue responder: Evaluar cómo la pérdida o amplificación de los centrosomas puede afectar la fisiología celular al perfilarse el transcriptoma global cerebral y de los [discos imaginales](https://es.wikipedia.org/wiki/Disco_imaginal) de las larvas de *Drosophila*.
+- Enlace a los datos y/o al artículo artículo: https://bio.biologists.org/content/1/10/983.short
+- Comentarios adicionales
+
+**Descargamos los datos**
+
+```{r}
+if (!require(GEOquery)) {
+  BiocManager::install("GEOquery")
+}
+require(GEOquery)
+gse <- getGEO("GSE507")
+class(gse)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+# Methods
+
+## Environment preparation:
+
+Para llevar a cabo un análisis de microarrays, el analista debe gestionar una gran cantidad de archivos entre aquesllos que ocupan los datos originales y los generados durante su análisis. Es por ello que siempre se debería comenzar creando als carpetas necesarias para simplificar la ruta de trabajo. Se recomienda generar una **carpeta principal** con el nombre de nuestro proyecto en cuyo interior alojaremos una carpeta con los archivos de **datos** y otra con los **resultados** generados del análisis
+
+Estas carpetas las genereamos rápidamente desde el explorador de archivos o la consola de cualquiera de los sistemas operativos usuales. Desde R también podemos generar estas subcarpetas mediante el siguiente código:
+
+
+```{r Carpetas, warning=FALSE, eval=FALSE}
+setwd(".")
+dir.create("data")
+dir.create("results")
+```
+
+El código completo para desarrollar este análisis, o cualquier otro a partir de su adaptación, puede descargarse del siguiente repositorio de *GitHub*:
+
+[https://github.com/albamgarces/reanalisis_microarrays.git](https://github.com/albamgarces/reanalisis_microarrays.git). 
+
