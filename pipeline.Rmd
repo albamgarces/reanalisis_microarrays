@@ -94,27 +94,28 @@ El código completo para desarrollar este análisis, o cualquier otro a partir d
 Se necesitarán paquetes adicionales a los incluidos en la intalación básica de R para poder llevar a cabo el análisis. Estos paquetes pueden descargarse tanto del repositorio CRAN para los paquetes típicos de R o directamente de Bioconductor para las funciones del mismo.
 
 ```{r BioconductorInstalling}
-if (!requireNamespace("BiocManager", quietly = TRUE))
-     install.packages("BiocManager")
-BiocManager::install()
+# if (!requireNamespace("BiocManager", quietly = TRUE))
+#      install.packages("BiocManager")
+# BiocManager::install()
 ```
 
 A continuación se muestran los paquetes necesarios fara este estudio que requieren instalación:
 
 ```{r instalacionPaquetes}
 # # UNCOMMENT IF INSTALL REQUIRES
-# install.packages("knitr")
+## install.packages("knitr")
 # install.packages("colorspace")
-# install.packages("gplots")
-# install.packages("ggplot2")
-# install.packages("ggrepel")
+##install.packages("cluster")
+## install.packages("gplots")
+## install.packages("ggplot2")
+## install.packages("ggrepel")
 # install.packages("htmlTable")
 # install.packages("prettydoc")
 # install.packages("devtools")
 # install.packages("BiocManager")
 # BiocManager::install("oligo")
 # BiocManager::install("pd.mogene.2.1.st")
-# BiocManager::install("arrayQualityMetrics")
+## BiocManager::install("arrayQualityMetrics")
 # BiocManager::install("pvca")
 # # NOT NEEDED UNTIL ANALYSES ARE PERFORMED
 # BiocManager::install("limma")
@@ -124,16 +125,19 @@ A continuación se muestran los paquetes necesarios fara este estudio que requie
 # BiocManager::install("org.Mm.eg.db")
 # BiocManager::install("ReactomePA")
 # BiocManager::install("reactome.db")
+## BiocManager::install("pacman")
 ```
 
 
 ```{r requirePaquetes}
 # require(knitr)
 # require(kableExtra)
+require(ggdendro)
 require(arrayQualityMetrics)
 require(factoextra)
 require(ggplot2)
 require(ggrepel)
+require(cluster)
 ```
 
 
@@ -156,9 +160,6 @@ rawData <- gse[[1]]
 rawData
 ```
 
-```{r}
-levels(rawData$characteristics_ch1)
-```
 
 El objeto `expressionSet`combina las difetrentes fuentes de información del estudio en una única estructura. Además de incluir toda la información generada durante el desarrollo del experimento, podemos cambiar la visualización de los datos para que sea más sencillo su uso.
 
@@ -253,9 +254,7 @@ summary(trawData_ACP)
 dim(trawData_ACP$rotation)
 ```
 
-```{r}
-#levels(rawData$characteristics_ch1)
-```
+`
 El gráfico de la figura \@ref(fig:plot_trawData_ACP) nos muestra las dos primeras componentes principales de la expresión sobre los genes de cada muestra. Se puede ver
 
 ```{r}
@@ -265,13 +264,14 @@ df_trawData_ACP <- as.data.frame(trawData_ACP$x)
 ```{r plot_trawData_ACP, fig.cap="Dos primeras componentes principales de los datos sin procesar utilizando como variables la expresión de los genes"}
 labels=colnames(rawData)
 #debemos convertir trawData_ACP a data frame
-par(1,1)
+par(2,1)
 ggplot(df_trawData_ACP, aes(PC1, PC2, label= labels)) +
   theme_classic()+
   geom_text_repel() +
   geom_vline(xintercept=0, color="gray")+
   geom_hline(yintercept = 0, color="gray")+
   geom_point(color=c("orange", "green", "blue", "purple", "pink")[tipos])
+
 trawData_ACP2 <- prcomp(t(as.matrix(rawData[,-15])), center = TRUE, scale=FALSE)
 summary(trawData_ACP2)
 dim(trawData_ACP2$rotation)
@@ -290,26 +290,57 @@ labels=colnames(rawData)
 
 
 
-```{r plot_trawData_ACP2, fig.cap="Dos primeras componentes principales de los datos sin procesar utilizando como variables la expresión de los genes"}
-trawData_ACP2 <- prcomp(t(as.matrix(rawData[,-15])), center = TRUE, scale=FALSE)
-summary(trawData_ACP2)
-dim(trawData_ACP2$rotation)
-plot(trawData_ACP2$x[,1], trawData_ACP2$x[,2], col = c("orange", "green", "blue", "purple", "pink")[tipos],
-     pch=16,
-     xlab="CP1", ylab="CP2",
-     
-     main="ACP de los genes")
-abline(h=0,v=0, col="gray")
-legend("bottomright", pch = c(16,16,16,16,16),
-       col=c("orange", "green", "blue", "purple","pink"),
-       legend=c("D-Sas4", "D-Sas6", "OregonRWT", "SakOE", "w67WT"),
-       cex=0.5)
-labels=colnames(rawData)
+```{r plot_trawData_ACP2prueba, fig.cap="Dos primeras componentes principales de los datos sin procesar utilizando como variables la expresión de los genes"}
+# trawData_ACP2 <- prcomp(t(as.matrix(rawData[,-15])), center = TRUE, scale=FALSE)
+# summary(trawData_ACP2)
+# dim(trawData_ACP2$rotation)
+# plot(trawData_ACP2$x[,1], trawData_ACP2$x[,2], col = c("orange", "green", "blue", "purple", "pink")[tipos],
+#      pch=16,
+#      xlab="CP1", ylab="CP2",
+#      
+#      main="ACP de los genes")
+# abline(h=0,v=0, col="gray")
+# legend("bottomright", pch = c(16,16,16,16,16),
+#        col=c("orange", "green", "blue", "purple","pink"),
+#        legend=c("D-Sas4", "D-Sas6", "OregonRWT", "SakOE", "w67WT"),
+#        cex=0.5)
+# labels=colnames(rawData)
 #text(trawData_ACP$x[,1], trawData_ACP$x[,2], labels, cex=0.5, pos=3,)
 ```
 
 
+Se podría decir que eliminando la muestra discordante, los datos se agrupan mejor. Pero es muy raro que en un estudio se elimine un parámetro únicamente con una única prueba que indique algún tipo de problema. Antes de llegar a esos extremos, se siguen una serie de paso de análisis de los datos que sanearán el conjunto.
 
+### Clúster Jerárquico
 
+Otra forma de asegurarnos que las muestra se agrupan según los grupos experimentales, es mediante un clúster jerárquico que nos agrupa las muestras por grado de similaridad. Mediante un dendograma, se va mostrando a qué valor se produce l aunión de los grupos y qué grupos se unen.
 
+Como podemos observar en la figura \@ref(fig:plot_trawData_ACP), la muestra OregonRWT3 vuelve a quedarse aislada de las otras dos réplicas.
+
+```{r}
+# rawDAta_cluster <- agnes(rawData, metric = "euclidean", method="average")
+```
+
+```{r}
+rawData_cluster <- dist(t(as.matrix(rawData)), method="euclidian")
+rawData_cluster1 <- hclust(rawData_cluster, method="single")
+```
+
+```{r}
+ggdendrogram(rawData_cluster1, rotate=FALSE, size=2)
+```
+```{r}
+
+```
+
+### Gráfico M-A
+
+### Gráficos de degradación
+
+### Modelos de bajo nivel
+
+##Normalización
+# Bibliografía
+
+https://www.uv.es/ayala/docencia/tami/tami13.pdf
 
