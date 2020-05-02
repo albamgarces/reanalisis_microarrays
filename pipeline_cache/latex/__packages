@@ -1,7 +1,8 @@
 base
-methods
-datasets
-utils
-grDevices
-graphics
-stats
+arrayQualityMetrics
+ggplot2
+factoextra
+BiocGenerics
+Biobase
+GEOquery
+ggrepel
