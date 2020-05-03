@@ -1,75 +1,41 @@
 ---
-title: "Pipeline PEC1"
+title: "Análisis Datos Series GSE35240"
 author: "Alba Moya Garcés"
 date: '`r format(Sys.Date(),"%e de %B, %Y")`'
 output: 
   pdf_document:
     toc: yes
+    toc_depth: 4
 nocite: |
   @*
 bibliography: biblio_PEC1.bib
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, cache=TRUE, warning=FALSE, message=FALSE, fig_caption = TRUE)
+knitr::opts_chunk$set(echo = FALSE, comment=FALSE, cache=TRUE, warning=FALSE, message=FALSE, fig_caption = TRUE)
 ```
 
 
 
-1. Identificar que grupos hay y a qué grupo pertenece cada muestra.
-2. Control de calidad de los datos crudos
-3. Normalización
-4. [Control de calidad de los datos normalizados] (opcional)
-5. Filtraje no específico [opcional]
-6. Identificación de genes diferencialmente expresados
-7. Anotación de los resultados: 
-8. Comparación entre distintas comparaciones (si hay más de una comparación, ver que genes han sido seleccionados en más de una comparación)
-9. Análisis de significación biológica (“Gene Enrichment Analysis”)
+# Abstract
 
-Estudio elegido:
+Basándonos en los datos de microarrays proporcionados por Baumbach(2012) realizaremos un análisis de los mismos utilizando diferentes paquetes R y Bioconductor de los datos sin procesar (Archivos binarios obtenidos del proceso de hibridación). La línea de análisis contiene diferentes pasos hasta lelgar a los resultados finales y su discusión. Se describirá en la medida de lo posible cada proceso y se facilitará el código necesario para su reproducibilidad a lo largo del texto de manera parcial y en su totalidad en un repositorio de github.
 
-**Gene expression in mitotic tissues of Drosophila larvae without centrosomes or too many centrosomes**
+# Objetivos
 
+Se pretende replicar los análisis desarrollados por los autores, tomando los datos en crudos facilitados en la base de datos *Gene Expression Omnibus* (GEO).
+El análisis resultante debería servir para evaluar cómo la pérdida o amplificación de los centrosomas puede afectar la fisiología celular al perfilarse el transcriptoma global cerebral y de los [discos imaginales](https://es.wikipedia.org/wiki/Disco_imaginal) de las larvas de *Drosophila* y llegar a las mismas conclusiones que Baumbach(2012).
 
-La expresión genética de las líneas mutantes se compararon con ambas líneas salvajes de control. 
+# Material y métodos
 
+##Estudio elegido:
 
+Se ha seleccionado el estudio **"Gene expression in mitotic tissues of Drosophila larvae without centrosomes or too many centrosomes"**, analizan el efecto de la sobreexpresión o pérdida de centrosomas en la formación de células tumorales en *Drosophila melanogaster*. Para ello, se tomaron dos líneas mutantes con pérdida de centrosomas (DSas-4 y DSas-6) y una línea productora de sobreexpresión de centrosomas (SakOE) y se compararó la expresión genética de las mismas con dos líneas de tipo salvaje de control (w67 y OregonR).
 
-- Tipo de microarrays que utilizan: se hibridaron con arrays *Affymetrix Drosophila Genome 2.0*
+Baumbach(2012) explica que se diseccionaron tejidos mitóticos (cerebrales y de los discos imaginales) de 10 larvas de *Drosophila* en estadío 3 de las diferentes líneas a estudio y se extrajo el ARN de tres réplicas en cada una de ellas (15 muestras). Se hibridaron con arrays *Affymetrix Drosophila Genome 2.0* y se obtuvo la serie GSE35240 con todos los datos almacenados en archivos .CEL
 
-- Número de muestras y grupos que contiene el estudio: 
+El artículo resultante se puede encontrar íntegro en la página web de Biology Open en el siguiente enlace: https://bio.biologists.org/content/1/10/983.short
 
-Se diseccionaron tejidos mitóticos (cerebrales y de los discos imaginales) de 10 larvas de *Drosophila* en estadío 3:    
-
-| ausencia de centrosomas | | exceso de centrosomas | tipo salvaje | |
-| DSas-4 | DSas-6 | SakOE |  WT w67 | WT OregonR|  
-| | | | | |    
-
-
-Se extrajo el ARN de **tres réplicas** por cada línea (15 muestras en total)
-
-|GSM864362 |	brains and imaginal discs from D-Sas4 mutant 3rd instar Drosophila larvae | biological replicate 1|
-|GSM864363 |	brains and imaginal discs from D-Sas4 mutant 3rd instar Drosophila larvae | biological replicate 2|
-
-|GSM864364 	brains and imaginal discs from D-Sas4 mutant 3rd instar Drosophila larvae, biological replicate 3|
-|GSM864365 	brains and imaginal discs from D-Ssas6 mutant 3rd instar Drosophila larvae, biological replicate 1
-GSM864366 	brains and imaginal discs from D-Ssas6 mutant 3rd instar Drosophila larvae, biological replicate 2
-GSM864367 	brains and imaginal discs from D-Ssas6 mutant 3rd instar Drosophila larvae, biological replicate 3
-GSM864368 	brains and imaginal discs from Sak overexpressing 3rd instar Drosophila larvae, biological replicate 1
-GSM864369 	brains and imaginal discs from Sak overexpressing 3rd instar Drosophila larvae, biological replicate 2
-GSM864370 	brains and imaginal discs from Sak overexpressing 3rd instar Drosophila larvae, biological replicate 3
-GSM864371 	brains and imaginal discs from w67 wild type 3rd instar Drosophila larvae, biological replicate 1
-GSM864372 	brains and imaginal discs from w67 wild type 3rd instar Drosophila larvae, biological replicate 2
-GSM864373 	brains and imaginal discs from w67 wild type 3rd instar Drosophila larvae, biological replicate 3
-GSM864374 	brains and imaginal discs from OregonR wild type 3rd instar Drosophila larvae, biological replicate 1
-GSM864375 	brains and imaginal discs from OregonR wild type 3rd instar Drosophila larvae, biological replicate 2
-GSM864376 	brains and imaginal discs from OregonR wild type 3rd instar Drosophila larvae, biological replicate 3
-
-- Que pregunta principal persigue responder: Evaluar cómo la pérdida o amplificación de los centrosomas puede afectar la fisiología celular al perfilarse el transcriptoma global cerebral y de los [discos imaginales](https://es.wikipedia.org/wiki/Disco_imaginal) de las larvas de *Drosophila*.
-- Enlace a los datos y/o al artículo artículo: https://bio.biologists.org/content/1/10/983.short
-- Comentarios adicionales
-
-# Methods
 
 ## Preparación del área de trabajo:
 
@@ -78,7 +44,7 @@ Para llevar a cabo un análisis de microarrays, el analista debe gestionar una g
 Estas carpetas las genereamos rápidamente desde el explorador de archivos o la consola de cualquiera de los sistemas operativos usuales. Desde R también podemos generar estas subcarpetas mediante el siguiente código:
 
 
-```{r Carpetas, eval=FALSE}
+```{r Carpetas, eval=FALSE, echo=TRUE}
 setwd(".")
 dir.create("data")
 dir.create("results")
@@ -99,33 +65,27 @@ Se necesitarán paquetes adicionales a los incluidos en la intalación básica d
 # BiocManager::install()
 ```
 
-A continuación se muestran los paquetes necesarios fara este estudio que requieren instalación:
+A continuación se muestran los paquetes necesarios fpara este estudio que requieren instalación:
 
-```{r instalacionPaquetes}
-# # UNCOMMENT IF INSTALL REQUIRES
-## install.packages("knitr")
-# install.packages("colorspace")
-##install.packages("cluster")
-## install.packages("gplots")
-## install.packages("ggplot2")
-## install.packages("ggrepel")
-# install.packages("htmlTable")
-# install.packages("prettydoc")
-# install.packages("devtools")
+```{r instalacionPaquetes, echo=TRUE}
+# UNCOMMENT IF INSTALL REQUIRES
+# install.packages("knitr")
+#install.packages("cluster")
+# install.packages("gplots")
+# install.packages("ggplot2")
+# install.packages("ggrepel")
 # install.packages("BiocManager")
 # BiocManager::install("oligo")
-# BiocManager::install("pd.mogene.2.1.st")
-## BiocManager::install("arrayQualityMetrics")
+# BiocManager::install("arrayQualityMetrics")
 # BiocManager::install("pvca")
-# # NOT NEEDED UNTIL ANALYSES ARE PERFORMED
+# BiocManager::install("pacman")
+# BiocManager::install("geneplotter")
+# BiocManager::install("org.Dm.eg.db")
 # BiocManager::install("limma")
 # BiocManager::install("genefilter")
-# BiocManager::install("mogene21sttranscriptcluster.db")
-# BiocManager::install("annotate")
-# BiocManager::install("org.Mm.eg.db")
+# BiocManager::install("drosophila2.db")
 # BiocManager::install("ReactomePA")
-# BiocManager::install("reactome.db")
-## BiocManager::install("pacman")
+
 ```
 
 
@@ -138,24 +98,27 @@ require(factoextra)
 require(ggplot2)
 require(ggrepel)
 require(cluster)
+require(oligo)
+require(limma)
+require(Biobase)
+require(gplots)
+require(ReactomePA)
+require(org.Dm.eg.db)
+
 ```
 
 
 ##Descarga de los datos
 
-En lugar de descargar los archivos .CEL y construir manualmente el archivo "targets", se utilizará el paquete `geoQuery` para generar de forma automática el objeto ExpressionSet necesario para el análisis. De esta forma se evitan posibles errores de transcripción o codificador por parte del analista.
+En lugar de descargar los archivos .CEL y construir manualmente el archivo "targets", se utilizará el paquete `geoQuery` para generar de forma automática el objeto ExpressionSet necesario para el análisis. De esta forma se evitan posibles errores de transcripción o codificador por parte del analista. Además, como los datos ya están normalizados, se procederá a desarrollar el análisis de calidad directamente sobre los datos normalizados.
 
 
-```{r}
+```{r getGEO, echo=TRUE}
 if (!require(GEOquery)) {
   BiocManager::install("GEOquery")
 }
 require(GEOquery)
 gse <- getGEO("GSE35240")
-
-```
-
-```{r}
 rawData <- gse[[1]]
 rawData
 ```
@@ -165,33 +128,28 @@ El objeto `expressionSet`combina las difetrentes fuentes de información del est
 
 ```{r Cambio colnames rawData}
 colnames(rawData) = c("D-Sas4_1", "D-Sas4_2", "D-Sas4_3", "D-Ssas6_1", "D-Ssas6_2", "D-Ssas6_3", "SakOE_1", "SakOE_2", "SakOE_3", "w67WT_1", "w67WT_2", "w67WT_3", "OregonRWT_1", "OregonRWT_2", "OregonRWT_3")
-# rawData_2 <- cbind(rawData@assayData[["exprs"]])
 ```
 
 
-##Control de calidad de los datos sin procesar
+##Control de calidad de los datos
 
 Se debe primero analizar si los datos tiene suficiente calidad para poder trabajar con ellos. Unos datos de mala calidad prodían producir demasiado ruido en el análisis que no será resuelto al realizar el proceso de normalización.
 
-
-El primer para llevar esto a cabo será descargar el paquete `ArrayQualityMetrics` que nos permite desarrollar un estudio de calidad de los datos. Si resulta algún array fuera de los límites de calidad propuestos, aparecerá marcado con un asterisco y podrá ser detectado inmediatamente. Si el mismo array destaca tres veces, debería ser analizado y considerar su eliminación del estudio para mejorar cualitativamente el experimento.
-
+El primer paso para llevar esto a cabo será descargar el paquete `ArrayQualityMetrics` que nos permite desarrollar un estudio de calidad de los datos. Si resulta algún array fuera de los límites de calidad propuestos, aparecerá marcado con un asterisco y podrá ser detectado inmediatamente. Si el mismo array destaca tres veces, debería ser analizado y considerar su eliminación del estudio para mejorar cualitativamente el experimento.
 
 ```{r ControlCalidad, echo=TRUE}
 arrayQualityMetrics(rawData, outdir="./results/rawdata_quality", force=TRUE)
 ```
 
-Se realizará un análisis conjunto de la calidad de los datos y se creará una nueva carpeta con un informe llamado *index.html* en el que podremos acceder al resumen de los análisis desarrollados y que nos indicará las muestras de calidad dudosa mediante una marca en cada análisis y muestra en las que la calidad sea deficiente. En el objeto de nuestro estudio y como podemos ver en la figura \@ref(fig:dataset) no tenemos ninguna muestra cuya calidad deba preocuparnos. 
+Se realizará un análisis conjunto de la calidad de los datos y se creará una nueva carpeta con un informe llamado *index.html* en el que podremos acceder al resumen de los análisis desarrollados y que nos indicará las muestras de calidad dudosa mediante una marca en cada análisis y muestra en las que la calidad sea deficiente. En el objeto de nuestro estudio y como podemos ver no tenemos ninguna muestra cuya calidad deba preocuparnos. 
+![Vista general del análisis de calidad de los datos con arrayQuality](arrayQuality.jpg)
 
-```{r}
-#poner captura del informe
-```
 
 Desde este documento, se puede acceder a los gráficos de medición de la calidad de cada una de las muestras. A continuación desarrrollaremos algunas de ellas de manera global.
 
 ###Gráficos de densidad    
 
-Mediante un histograma de densidad de Kernel, podemos hacernos una idea de las distribuciones de los distintos arrays del conjunto de datos. En la figura \@ref(fig:histrawData)Podemos apreciar que, probablemente debido al gran número de arrays, todos siguen el mismo patrón de distribución de la señal.
+Mediante un histograma de densidad de Kernel, podemos hacernos una idea de las distribuciones de los distintos arrays del conjunto de datos. En la figura Podemos apreciar que, probablemente debido al gran número de arrays, todos siguen el mismo patrón de distribución de la señal.
 
 ```{r histrawData, fig.cap="Histograma de los arrays del conjunto de datos."}
 affy::hist(rawData)
@@ -201,9 +159,9 @@ affy::hist(rawData)
 
 ###Diagramas de cajas
 
-El diagrama de cajas también no mostrará la distribución de las intensidades, en la figura \@ref(fig:PCARaw) se pueden apreciar pequeñas variaciones esperables en los datos sin procesar.
+El diagrama de cajas también no mostrará la distribución de las intensidades, en la figura se pueden apreciar pequeñas variaciones esperables en los datos normalizados.
 
-```{r boxplotrawData, fig.cap="Diagramas de caja de la intensidad de los arrays para los datos sin procesar."}
+```{r boxplotrawData, fig.cap="Diagramas de caja de la intensidad de los arrays para los datos normalizados."}
 tipos <- as.numeric(rawData$characteristics_ch1)
 boxplot(rawData, las=2, cex.axis=0.5,
         col = c("orange", "green", "blue", "purple", "pink")[tipos],
@@ -215,7 +173,7 @@ boxplot(rawData, las=2, cex.axis=0.5,
 
 Mediante el análisis de componentes principales podemos detectar si las muestras se agrupan entre otras muestras del mismo grupo o si no hay una clara correspondencia entre ellas. Que las muestras no se agrupen por "familias" podría ser debido al efecto *batch* por defectos técnicos. 
 
-Podemos realizar el análisis de componentes principales (ACP) de los datos, observando en el gráfico de la figura \@ref(fig:plot_rawData_ACP), la distribución de las dos primeras componentes de la expresión de cada gen (observaciones) sobre cada muestra (variables). Podemos ver como se distribuyen uniformemente a lo largo de la primera componente principal, salvo una perturbación que ocurre en valores altos de ambas componentes que habría que analizar.
+Podemos realizar el análisis de componentes principales (ACP) de los datos, observando en el gráfico de la figura, la distribución de las dos primeras componentes de la expresión de cada gen (observaciones) sobre cada muestra (variables). Podemos ver como se distribuyen uniformemente a lo largo de la primera componente principal, salvo una perturbación que ocurre en valores altos de ambas componentes que habría que analizar.
 
 
 ```{r rawData_ACP}
@@ -224,8 +182,6 @@ rawData_ACP <- prcomp(rawData)
 summary(rawData_ACP)
 dim(rawData_ACP$rotation)
 ```
-
-
 
 
 ```{r plot_rawData_ACP, fig.cap="Dos primeras componentes principales de los datos sin procesar utilizando como variables la expresión en las muestras"}
@@ -250,12 +206,9 @@ Pero lo que nos interesa es considerar las diferentes muestras como observacione
 #transponemos la matriz para indicar que las muestras son las observaciones
 #y los genes las variables
 trawData_ACP <-prcomp(t(as.matrix(rawData)), center = TRUE, scale=FALSE)
-summary(trawData_ACP)
-dim(trawData_ACP$rotation)
 ```
 
-`
-El gráfico de la figura \@ref(fig:plot_trawData_ACP) nos muestra las dos primeras componentes principales de la expresión sobre los genes de cada muestra. Se puede ver
+El siguiente gráfico nos muestra las dos primeras componentes principales de la expresión sobre los genes de cada muestra. Se puede ver como una de las muestras para la línea salvaje OregonR no se agrupa con el resto de muestras de la línea. Esto puede deberse probablemente a errores técnicos a la hora de procesar las muestras.
 
 ```{r}
 df_trawData_ACP <- as.data.frame(trawData_ACP$x)
@@ -264,7 +217,6 @@ df_trawData_ACP <- as.data.frame(trawData_ACP$x)
 ```{r plot_trawData_ACP, fig.cap="Dos primeras componentes principales de los datos sin procesar utilizando como variables la expresión de los genes"}
 labels=colnames(rawData)
 #debemos convertir trawData_ACP a data frame
-par(2,1)
 ggplot(df_trawData_ACP, aes(PC1, PC2, label= labels)) +
   theme_classic()+
   geom_text_repel() +
@@ -272,9 +224,14 @@ ggplot(df_trawData_ACP, aes(PC1, PC2, label= labels)) +
   geom_hline(yintercept = 0, color="gray")+
   geom_point(color=c("orange", "green", "blue", "purple", "pink")[tipos])
 
+```
+
+
+Si elimináramos del estudio esta muestra, el gráfico nos quedaría más acorde a lo que esperaríamos.
+
+```{r}
 trawData_ACP2 <- prcomp(t(as.matrix(rawData[,-15])), center = TRUE, scale=FALSE)
-summary(trawData_ACP2)
-dim(trawData_ACP2$rotation)
+
 plot(trawData_ACP2$x[,1], trawData_ACP2$x[,2], col = c("orange", "green", "blue", "purple", "pink")[tipos],
      pch=16,
      xlab="CP1", ylab="CP2",
@@ -285,29 +242,7 @@ legend("bottomright", pch = c(16,16,16,16,16),
        col=c("orange", "green", "blue", "purple","pink"),
        legend=c("D-Sas4", "D-Sas6", "OregonRWT", "SakOE", "w67WT"),
        cex=0.5)
-labels=colnames(rawData)
 ```
-
-
-
-```{r plot_trawData_ACP2prueba, fig.cap="Dos primeras componentes principales de los datos sin procesar utilizando como variables la expresión de los genes"}
-# trawData_ACP2 <- prcomp(t(as.matrix(rawData[,-15])), center = TRUE, scale=FALSE)
-# summary(trawData_ACP2)
-# dim(trawData_ACP2$rotation)
-# plot(trawData_ACP2$x[,1], trawData_ACP2$x[,2], col = c("orange", "green", "blue", "purple", "pink")[tipos],
-#      pch=16,
-#      xlab="CP1", ylab="CP2",
-#      
-#      main="ACP de los genes")
-# abline(h=0,v=0, col="gray")
-# legend("bottomright", pch = c(16,16,16,16,16),
-#        col=c("orange", "green", "blue", "purple","pink"),
-#        legend=c("D-Sas4", "D-Sas6", "OregonRWT", "SakOE", "w67WT"),
-#        cex=0.5)
-# labels=colnames(rawData)
-#text(trawData_ACP$x[,1], trawData_ACP$x[,2], labels, cex=0.5, pos=3,)
-```
-
 
 Se podría decir que eliminando la muestra discordante, los datos se agrupan mejor. Pero es muy raro que en un estudio se elimine un parámetro únicamente con una única prueba que indique algún tipo de problema. Antes de llegar a esos extremos, se siguen una serie de paso de análisis de los datos que sanearán el conjunto.
 
@@ -315,11 +250,8 @@ Se podría decir que eliminando la muestra discordante, los datos se agrupan mej
 
 Otra forma de asegurarnos que las muestra se agrupan según los grupos experimentales, es mediante un clúster jerárquico que nos agrupa las muestras por grado de similaridad. Mediante un dendograma, se va mostrando a qué valor se produce l aunión de los grupos y qué grupos se unen.
 
-Como podemos observar en la figura \@ref(fig:plot_trawData_ACP), la muestra OregonRWT3 vuelve a quedarse aislada de las otras dos réplicas.
+Como podemos observar, la muestra OregonRWT3 vuelve a quedarse aislada de las otras dos réplicas.
 
-```{r}
-# rawDAta_cluster <- agnes(rawData, metric = "euclidean", method="average")
-```
 
 ```{r}
 rawData_cluster <- dist(t(as.matrix(rawData)), method="euclidian")
@@ -329,18 +261,403 @@ rawData_cluster1 <- hclust(rawData_cluster, method="single")
 ```{r}
 ggdendrogram(rawData_cluster1, rotate=FALSE, size=2)
 ```
+
+
+##Normalización
+
+Antes de comenzar cualquier análisis de datos en crudo, debemos transformarlos para corregir diferencias que pueda haber entre muestras. De esta forma hacemos que los arrays sean comparables unos con otros para poder determinar si una diferenciación es real o simplemente es debida a la escala de los datos originales.
+
+Para llevar a cabo esta normalización primero tendremos que corregir el ruido de fondo. Tras la normalización, se procederá al resumen de los valores de cada grupo de sondas en un único valor de expresión para cada gen.
+
+Al descargar los datos con getGEO, los datos ya aparecen normalzados. Lo podemos deducir al explorar el *boxplot* de expresión generado anteriormente. Es por esto que se pasará directamente al proceso de filtraje de datos.
+
+
+##Filtraje
+
+El filtraje no específico permite hacer una criba de genes con poca variabilidad entre condiciones o con alguna otra característica que lleve a que nos interese eliminarlos.
+
+### Variabilidad genética
+
+Para cada uno de los genes, tendremos un valor numérico (expresión)que nos indicará su abundancia. De cada una de las muestras, a su vez tenemos diversas covariables que las describen y que pueden ser categóricas, numéricas, temporales... y si la variable tiene dos categorías, entonces nos define dos grupos (control y tratamiento, por ejemplo).
+
+Los grupos cuantiosos de genes suelen presentar una gran variabilidad de la expresión genética que debe ser ajustada mediante los valores p para poder determinar si hay diferencias entre la expresión de genes de dos (o más) grupos considerados.
+
+Si un gen concreto se expresa de forma diferencia, se espera una cierta diferenciación entre los grupos y, por tanto, la varianza de dicho gen será mayor que la de aquellos que no presenten esta expresión diferencial. Al trazar la variabilidad genética de todos los genes es útil para decidir qué porcentaje de genes presenta una variabilidad que podría atribuirse a causas distintas de la variación aleatoria.
+
+El siguiente gráfico representa las desviaciones estándar de todos los genes ordenados de menor a mayor valor, siendo aquellos genes con una desviación estándar superior al 90-95% los que se podrían considerar que tienen una variabilidad significativamente mayor que el resto.
+
+
+```{r sd_distribucion, fig.cap="Distribución de la variabilidad genética en orden ascendente. Las líneas verticales representan los percentiles 90 y 95%"}
+sds <- apply(exprs(rawData), 1, sd)
+sdsO<- sort(sds)
+plot(1:length(sdsO), sdsO, main="Distribución variabilidad genética", 
+     xlab="Genes", 
+     ylab="Desviación estándar")
+abline(v=length(sds)*c(0.9,0.95))
+```
+
+Para realizar el filtraje de genes expresados diferencialmente, utilizamos el paquete `genefilter`. Para ello necesitamos conocer primero el paquete de anotación que utilizan nuestros datos.
+
+
+```{r annotation_function, echo=TRUE}
+fun <- function(GDSDataobj){
+  fulltitle<- Meta(GDSDataobj)$title
+  title <- strsplit(fulltitle, "\\[|\\]")[[1]][2]
+  title <- paste0(gsub("_|-| ", "", tolower(title)), ".db")
+  title
+}
+eset <- getGEO("GSE35240")[[1]]
+fun(getGEO(annotation(eset)))
+```
+
+```{r filtraje, echo=TRUE}
+annotation(rawData) <- "drosophila2.db"
+filtered <- nsFilter(rawData,
+                           require.entrez = TRUE, remove.dupEntrez = TRUE,
+                           var.filter = TRUE, var.func = IQR, var.cutoff = 0.75, filterByQuantile = TRUE, feature.exclude="^AFFX" )
+```
+
+
+La función `nsfilter` permite eliminar los genes que varían poco o de los cuales no se tiene anotación. Devuelve los valores filtrados en un nuevo `expressionSet` y un informe de los resultados del filtraje.
+
 ```{r}
+filtered$filter.log
+```
+
+Después del filtraje han quedado 3157 genes disponibles para analizar.
+
+```{r expressionSet_filtro}
+rawData_filtro <-filtered$eset
+rawData_filtro
+```
+
+```{r}
+colnames(rawData_filtro) = c("D-Sas4_1", "D-Sas4_2", "D-Sas4_3", "D-Ssas6_1", "D-Ssas6_2", "D-Ssas6_3", "SakOE_1", "SakOE_2", "SakOE_3", "w67WT_1", "w67WT_2", "w67WT_3", "OregonRWT_1", "OregonRWT_2", "OregonRWT_3")
+```
+
+```{r file_saving}
+write.csv(exprs(rawData), file="./results/normalized.Data.csv")
+write.csv(exprs(rawData_filtro), file="./results/normalized.Filtered.Data.csv")
+save(rawData, rawData_filtro, file = "./results/rawData_filtro.Rda")
+```
+
+## Selección de genes
+
+Para seleccionar los genes diferencialente expresados, podemos basanrons en diferentes aproximaciones. Para realizar este análisis, nos basaremos en un modelo lineal construido con el programa `limma` e implementado por Smyth(2015) para comparar la expresión genética entre los diferentes grupos.
+
+### Matriz de diseño
+
+El primer paso para realizar este análisis es crear la matriz de diseño a partir de los datos filtrados. Ésta consiste en una matriz que describe la correspondencia de cada muestra al grupo experimental que le corresponde. Tendremos tantas líneas como muestras y en las columnas presentaremos los diferentes grupos. Cada fila contendrá un 1 en la columna correspondiente con su grupo.
+
+Diseñamos la matriz
+ 
+
+```{r design_matrix, echo=TRUE}
+designMat <- model.matrix(~0+rawData_filtro$`genotype:ch1`, pData(rawData_filtro))
+colnames(designMat)<- c("DSas4", "DSas6", "OregonRWT", "SakOE", "w67WT")
+designMat
+```
+
+
+### Matriz de contraste
+
+Tras definir el modelo lineal a través de la matriz de diseño, podemos formular las preguntas de interés (comparaciones o contrastes entre los parámetros)
+La matriz de contraste nos servirá para describir als comparaciones entre grupos. Contendrá tantas columnas como comparaciones y en las líneas tendremos cada grupo. La comparación entre grupos se representa por "1" o "-1" en las filas de grupos a comparar y "0" en el resto.
+
+En este caso Baumbach(2012) hacen las siguientes comparaciones:
+
+- transcriptoma global perdida de centrosoma vs. normal:
+  * w67 WT vs DSas6
+  * Oregon-R WT vs DSas6
+  * w67 WT vs DSas4
+  * Oregon-R WT vs DSas4
+- transcriptoma global sobreexpresión centrosoma vs normal:
+  * W67 vs SakOE
+  * Oregon-R WT vs SakOE
+- w67WT vs Oregon-R WT
+
+
+```{r cont_matrix, echo=TRUE}
+contrastMAt <- makeContrasts(
+#comparamos un mutante con ambos controles
+  w67vsSas4 = w67WT-DSas4,
+  OrvsSas4 = OregonRWT-DSas4,
+#lo mismo con el otro mutante
+  w67vsSas6 = w67WT-DSas6,
+  OrvsSas6 = OregonRWT-DSas6,
+#y con el sobreexpresado
+  w67vsOE = w67WT-SakOE,
+  OrvsOE = OregonRWT-SakOE,
+#Finalmente comparamos ambos controles
+  w67vsOrv = w67WT - OregonRWT,
+  levels=designMat)
+contrastMAt
+```
+
+
+### Estimación del modelo y selección de genes
+
+Tras definir las matrices de diseño y contraste, estimamos el modelo, los contrastes y realizamos las pruebas de significación.
+
+De nuevo, utilizamos el paquete `limma` para lelvar a cabo estas estimaciones.
+Este análisis nos proporcionará los estadísticos necesarios para rdenar los genes diferencialmente expresados.
+
+```{r estimacion_modelo, echo=TRUE}
+fit <- lmFit(rawData_filtro, designMat)
+fit.main <- contrasts.fit(fit, contrastMAt)
+#regularización de la varianza para estimaciones de error mejoradas
+fit.main <- eBayes(fit.main)
+save(fit.main, file="./results/fit.main.Rda")
+```
+
+Ajustamos los p-valor para controlar el porcentaje de falsos positivos que puedan darse debido a la gran cantidad de contrastes que se realizarán simultáneamente segun Benjamini y Hochberg (1995).
+
+La función `topTable`genera una lista de genes ordenados según su expresión diferencial para cada contraste. Nos proporciona los estadísticos siguientes:
+
+
+```{r topTables}
+topTab_w67vsSas4 <- topTable(fit.main, number=nrow(fit.main),
+                             coef="w67vsSas4",
+                             adjust="fdr")[,-(2:16)]
+topTab_OrvsSas4 <- topTable(fit.main, number=nrow(fit.main),
+                             coef="OrvsSas4",
+                             adjust="fdr")[,-(2:16)]
+topTab_w67vsSas6 <- topTable(fit.main, number=nrow(fit.main),
+                             coef="w67vsSas6",
+                             adjust="fdr")[,-(2:16)]
+topTab_OrvsSas6 <- topTable(fit.main, number=nrow(fit.main),
+                             coef="OrvsSas6",
+                             adjust="fdr")[,-(2:16)]
+topTab_w67vsOE <- topTable(fit.main, number=nrow(fit.main),
+                             coef="w67vsOE",
+                             adjust="fdr")[,-(2:16)]
+topTab_OrvsOE <- topTable(fit.main, number=nrow(fit.main),
+                             coef="OrvsOE",
+                             adjust="fdr")[,-(2:16)]
+topTab_w67vsOrv <- topTable(fit.main, number=nrow(fit.main),
+                             coef="w67vsOrv",
+                             adjust="fdr")[,-(2:16)]
 
 ```
 
-### Gráfico M-A
+Mostramos las primeras líneas de la tabla generada para la primera comparación: mutante D-Sas4 frente al tipo salvaje w^67:
 
-### Gráficos de degradación
+```{r}
+head(topTab_w67vsSas4)
+```
 
-### Modelos de bajo nivel
 
-##Normalización
+## Anotación Genética
+
+Creamos una función que nos generará la anotación genética de los genes almacenados en cada topTable.
+
+```{r GeneAnnotation, echo=TRUE}
+annotatedTopTable <- function(topTab, anotPackage){
+  topTab <- cbind(PROBEID=rownames(topTab), topTab)
+  myProbes <- rownames(topTab)
+  thePackage <- eval(parse(text = anotPackage))
+  geneAnots <- select(thePackage, myProbes, c("SYMBOL", "ENTREZID", "GENENAME"))
+  annotatedTopTab<- merge(x=geneAnots, y=topTab, by.x="PROBEID", by.y="PROBEID")
+return(annotatedTopTab)
+}
+```
+
+```{r AnnotatedTables}
+topAnnotated_w67vsSas4 <- annotatedTopTable(topTab_w67vsSas4,
+                                            anotPackage ="drosophila2.db" )
+topAnnotated_OrvsSas4 <- annotatedTopTable(topTab_OrvsSas4,
+                                            anotPackage ="drosophila2.db" )
+topAnnotated_w67vsSas6 <- annotatedTopTable(topTab_w67vsSas6,
+                                            anotPackage ="drosophila2.db" )
+topAnnotated_OrvsSas6 <- annotatedTopTable(topTab_OrvsSas6,
+                                            anotPackage ="drosophila2.db" )
+topAnnotated_w67vsOE <- annotatedTopTable(topTab_w67vsOE,
+                                            anotPackage ="drosophila2.db" )
+topAnnotated_OrvsOE <- annotatedTopTable(topTab_OrvsOE,
+                                            anotPackage ="drosophila2.db" )
+topAnnotated_w67vsOrv <- annotatedTopTable(topTab_w67vsOrv,
+                                            anotPackage ="drosophila2.db" )
+write.csv(topAnnotated_OrvsOE, file="./results/topAnnotated_OrvsOE.csv")
+write.csv(topAnnotated_w67vsSas4, file="./results/topAnnotated_w67vsSas4.csv")
+write.csv(topAnnotated_OrvsSas4, file="./results/topAnnotated_OrvsSas4.csv")
+write.csv(topAnnotated_w67vsSas6, file="./results/topAnnotated_w67vsSas6.csv")
+write.csv(topAnnotated_OrvsSas6, file="./results/topAnnotated_OrvsSas6.csv")
+write.csv(topAnnotated_w67vsOE, file="./results/topAnnotated_w67vsOE.csv")
+write.csv(topAnnotated_w67vsOrv, file="./results/topAnnotated_w67vsOrv.csv")
+```
+
+De esta forma, tenemos en una única tabla toda la información necesaria de cada una de nuestras comparaciones. La siguiente tabla nos muestra los datos para la comparación entre la línea salvaje OregonR y la línea sobreexpresada.
+
+```{r}
+head(topAnnotated_OrvsOE[,1:4])
+```
+
+
+## Gráficos
+
+### Volcano Plot
+
+Mediante un *volcano plot* podemos ver representados en abcisas los cambios de expresión en escala logarítmica y en ordenadas el estadístico p-valor en escala -log10.
+Como ejemplo, ilustramos la comparación entre la línea salvaje w67 y el mutante D-Sas4, marcando los seis primeros genes con valores más altos (mayor diferenciabilidad). 
+
+```{r volcanoPlot}
+geneSymbols <- select(drosophila2.db, rownames(fit.main), c("SYMBOL"))
+SYMBOLS <- geneSymbols$SYMBOL
+volcanoplot(fit.main, coef=1, highlight=6, names=SYMBOLS, 
+            main=paste("Differentially expressed genes", colnames(contrastMAt)[1], sep="\n"))
+  abline(v=c(-1,1))
+```
+
+###Comparaciones múltiples: Diagrama de Venn
+
+Al realizar comparaciones, a veces nos resulta importante para el estudio ver qué genes cambian simultáneamente en más de una comparación. Mediante la función `decidetests` podemos realizar estas comparaciones a la vez que ajustamos los p-valor entre las mismas, seleccionando únicamente los genes que cambian en una o más condiciones.
+
+Como resultado, obtendremos una tabla en la que cada comparación obtendrá un "1" (*up*) si el gen está sobreexpresado; un "0" (*NotSig*) si no se encuentran cambios significativos; o un "-1" (*Down*) si disminuye su expresión.
+
+```{r decideTest, echo=TRUE}
+res <- decideTests(fit.main, method = "separate", adjust.method = "fdr", p.value = 0.05, lfc = 1)
+summary(res)
+```
+
+Para resumir el análisis contamos las fila que tienen como mínimo una celda distinta de "0".
+
+```{r}
+sum.res.rows <- apply(abs(res),1,sum)
+res.selected <- res[sum.res.rows!=0,]
+head(res.selected)
+```
+
+Y con un **diagrama de Venn** podemos visualizar mejor estos resultados.
+
+```{r VennDiagram}
+par(mfrow=c(3,2))
+vennDiagram(res.selected[,1:2], main="Genes en común",
+            include=c("up", "down"),
+            counts.col=c("red", "blue"),
+    circle.col = c("red", "blue", "green3"))
+vennDiagram(res.selected[,3:4], main="Genes en común",
+            include=c("up", "down"),
+            counts.col=c("red", "blue"),
+            circle.col = c("red", "blue", "green3"))
+vennDiagram(res.selected[,5:6], main="Genes en común",
+            include=c("up", "down"),
+            counts.col=c("red", "blue"),
+            circle.col = c("red", "blue", "green3"))
+vennDiagram(res.selected[,c(2,4,6)], main="Genes en común",
+            circle.col = c("red", "blue", "green3"))
+vennDiagram(res.selected[,c(1,3,5)], main="Genes en común",
+            circle.col = c("red", "blue", "green3"))
+```
+
+
+### Perfiles de Expresión: Mapas de color
+
+Las expresiones de cada gen pueden visualizarse agrupándolas para destacar aquellos genes que se encuentran sobre o infra regulados simultáneamente y generando mapas de color o `Heatmaps`.
+
+Seleccionamos todos aquellos genes que hayan resultado diferencialmente expresados en alguna de las comparaciones.
+
+```{r HMdata, echo=TRUE, fig.cap="Mapa de color de la expresión de los datos agrupados por similitud de genes (filas) y muestras (columnas)."}
+probeNames <- rownames(res.selected)
+HMdata <- exprs(rawData_filtro)[probeNames,]
+geneSymbols2 <- select(drosophila2.db, rownames(HMdata), c("SYMBOL"))
+SYMBOLS2 <- geneSymbols2$SYMBOL
+rownames(HMdata) <- SYMBOLS2
+write.csv(HMdata, file=file.path("./results/data4Heatmap.csv"))
+
+#creamos el heatmaps
+color.map <- colorRampPalette(c("yellow", "brown"))(n=299)
+heatmap.2(HMdata, scale="row",
+          Rowv = TRUE,
+          Colv = TRUE,
+          col=color.map,
+          sepcolor = "white",
+           cexCol = 0.5,
+          dendrogram = "both",
+          density.info = "histogram")
+```
+
+### Significancia Biológica: Análisis de enriquecimiento
+
+Este análisis toma como entrada los identificadores *Entrez* de la lista de genes seleccionada y el nombre del paquete de la anotación correspondiente, y la salida que se obtiene es la lista de categorías que representa cada conjunto seleccionado.
+
+Utilizaremos el paquete `GOstats`para llevar a cabo este análisis.
+El primer paso será preparar la lista de genes que será analizada. Haremos una selección más permisiva que la realizada anteriormente para tener un análisis más fiable.
+
+```{r echo=TRUE}
+listOfTables <- list(w67vsSas4=topTab_w67vsSas4,
+    OrvsSas4=topTab_OrvsSas4,
+    w67vsSas6=topTab_w67vsSas6,
+    OrvsSas6=topTab_OrvsSas6,
+    w67vsOE=topTab_w67vsOE,
+    OrvsOE=topTab_OrvsOE,
+    w67vsOrv=topTab_w67vsOrv)
+listOfSelected<- list()
+for(i in 1:length(listOfTables)){
+
+#seleccionamos la topTable
+  topTab <- listOfTables[[i]]
+
+#seleccionamos los genes que incluiremos en el análisis
+  whichGenes<-topTab["adj.P.Val"]<0.1
+  selectedIDs <- rownames(topTab)[whichGenes]
+
+# convertimos ID en Entrez
+  EntrezIDs<- select(drosophila2.db, selectedIDs, c("ENTREZID"))
+  EntrezIDs <- EntrezIDs$ENTREZID
+  listOfSelected[[i]] <- EntrezIDs
+  names(listOfSelected)[i] <- names(listOfTables)[i]
+  }
+sapply(listOfSelected, length)  
+
+```
+
+Ahora utilizaremos todos los genes de los que disponemos en el estudio para definir el "universo" con aquellos genes que al menos presenten una anotación en Gene Ontology.
+
+```{r}
+mapped_genes2GO <- mappedkeys(org.Dm.eg.db)
+mapped_genes2KEGG <- mappedkeys(org.Dm.egPATH)
+mapped_genes <- union(mapped_genes2GO , mapped_genes2KEGG)
+```
+
+Por cuestiones de tiempo y espacio, se realizará la significación biólogia de una de las comparaciones.
+
+```{r}
+listOfData <- listOfSelected[]
+comparisonsNames <- names(listOfData)
+universe <- mapped_genes
+ 
+for (i in 1:length(listOfData)){
+   genesIn <- listOfData[[i]]
+   comparison <- comparisonsNames[i]
+   enrich.result <- enrichPathway(gene = genesIn,
+                                  pvalueCutoff = 1,
+                                  readable = T,
+                                  pAdjustMethod = "BH",
+                                  organism = "fly",
+                                  universe = universe)
+   
+   cat("##################################")
+   cat("\nComparison: ", comparison,"\n")
+   enrich.result}
+```
+
+Por algún motivo que escapa a mis conocimientos bioinformáticos, no soy capaz de generar el análisis.
+
+#Resultados
+
+La siguiente tabla muestra la lista de todos los archivos generados con los resultados del análisis.
+
+
+```{r listOfFiles, echo=FALSE}
+listOfFiles <- dir("./results/") 
+knitr::kable(
+  listOfFiles, booktabs = TRUE,
+  caption = 'Archivos de resultados',
+  col.names="Lista de resultados"
+)
+```
+
 # Bibliografía
 
-https://www.uv.es/ayala/docencia/tami/tami13.pdf
+Guillermo Ayala. Bioinformática EStadística. Análisis estadístico de datos ómicos. Material docente Universidad de Valencia. Consultado: Mayo 2020 Uhttps://www.uv.es/ayala/docencia/tami/tami13.pdf
 

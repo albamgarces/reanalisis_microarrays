@@ -8,3 +8,14 @@ GEOquery
 ggrepel
 ggdendro
 cluster
+oligoClasses
+S4Vectors
+IRanges
+XVector
+Biostrings
+oligo
+limma
+gplots
+ReactomePA
+AnnotationDbi
+org.Dm.eg.db
