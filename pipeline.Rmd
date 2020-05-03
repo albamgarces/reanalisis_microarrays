@@ -112,20 +112,23 @@ A continuación se muestran los paquetes necesarios fara este estudio que requie
 # install.packages("htmlTable")
 # install.packages("prettydoc")
 # install.packages("devtools")
-# install.packages("BiocManager")
-# BiocManager::install("oligo")
+## install.packages("BiocManager")
+## BiocManager::install("oligo")
 # BiocManager::install("pd.mogene.2.1.st")
 ## BiocManager::install("arrayQualityMetrics")
-# BiocManager::install("pvca")
+## BiocManager::install("pvca")
+## BiocManager::install("pacman")
+## BiocManager::install("geneplotter")
 # # NOT NEEDED UNTIL ANALYSES ARE PERFORMED
-# BiocManager::install("limma")
-# BiocManager::install("genefilter")
-# BiocManager::install("mogene21sttranscriptcluster.db")
+## BiocManager::install("limma")
+## BiocManager::install("genefilter")
+->## BiocManager::install("mogene21sttranscriptcluster.db")
+## BiocManager::install("drosophila2.db")
 # BiocManager::install("annotate")
 # BiocManager::install("org.Mm.eg.db")
 # BiocManager::install("ReactomePA")
 # BiocManager::install("reactome.db")
-## BiocManager::install("pacman")
+
 ```
 
 
@@ -138,6 +141,9 @@ require(factoextra)
 require(ggplot2)
 require(ggrepel)
 require(cluster)
+require(oligo)
+require(limma)
+
 ```
 
 
@@ -146,13 +152,12 @@ require(cluster)
 En lugar de descargar los archivos .CEL y construir manualmente el archivo "targets", se utilizará el paquete `geoQuery` para generar de forma automática el objeto ExpressionSet necesario para el análisis. De esta forma se evitan posibles errores de transcripción o codificador por parte del analista.
 
 
-```{r}
+```{r getGEO}
 if (!require(GEOquery)) {
   BiocManager::install("GEOquery")
 }
 require(GEOquery)
 gse <- getGEO("GSE35240")
-
 ```
 
 ```{r}
@@ -201,7 +206,7 @@ affy::hist(rawData)
 
 ###Diagramas de cajas
 
-El diagrama de cajas también no mostrará la distribución de las intensidades, en la figura \@ref(fig:PCARaw) se pueden apreciar pequeñas variaciones esperables en los datos sin procesar.
+El diagrama de cajas también no mostrará la distribución de las intensidades, en la figura \@ref(fig:boxplotrawData) se pueden apreciar pequeñas variaciones esperables en los datos sin procesar.
 
 ```{r boxplotrawData, fig.cap="Diagramas de caja de la intensidad de los arrays para los datos sin procesar."}
 tipos <- as.numeric(rawData$characteristics_ch1)
@@ -340,6 +345,91 @@ ggdendrogram(rawData_cluster1, rotate=FALSE, size=2)
 ### Modelos de bajo nivel
 
 ##Normalización
+
+Antes de comenzar el análisis de nuestros datos, debemos transformarlos para corregir diferencias que pueda haber entre muestras. De esta forma hacemos que los arrays sean comparables unos con otros para poder determinar si una diferenciación es real o simplemente es debida a la escala de los datos originales.
+
+Para llevar a cabo esta normalización primero tendremos que corregir el ruido de fondo. Tras la normalización, se procederá al resumen de los valores de cada grupo de sondas en un único valor de expresión para cada gen.
+
+Al descargar los datos con getGEO, los datos ya aparecen normalzados. Lo podemos deducir al explorar el *boxplot* de expresión de la figura \@ref(fig:boxplotrawData)
+### Método RMA
+
+##Filtraje
+
+El filtraje no específico permite hacer una criba de genes con poca variabilidad entre condiciones o con alguna otra característica que lleve a que nos interese eliminarlos.
+
+## Efecto *batch*
+
+```{r}
+# pct_threshold=0.6
+# batch.factor <- c("")
+```
+
+```{r}
+# data(rawData)
+# pct_threshold <- 0.6
+# batch.factor <- c("D-Sas4", "D-Sas6", "OregonRWT", "SakOE", "w67WT")
+# rawData_pvca <- pvcaBatchAssess(rawData, batch.factor, pct_threshold)
+```
+
+
+```{r matrizExpresion}
+# write.exprs(rawData, file="./data/GSE35240.txt")
+```
+## Variabilidad genética
+
+Para cada uno de los genes, tendremos un valor numérico (expresión)que nos indicará su abundancia. De cada una de las muestras, a su vez tenemos diversas covariables que las describen y que pueden ser categóricas, numéricas, temporales... y si la variable tiene dos categorías, entonces nos define dos grupos (control y tratamiento, por ejemplo).
+
+Los grupos cuantiosos de genes suelen presentar una gran variabilidad de la expresión genética que debe ser ajustada mediante los valores p para poder determinar si hay diferencias entre la expresión de genes de dos (o más) grupos considerados.
+
+Si un gen concreto se expresa de forma diferencia, se espera una cierta diferenciación entre los grupos y, por tanto, la varianza de dicho gen será mayor que la de aquellos que no presenten esta expresión diferencial. Al trazar la variabilidad genética de todos los genes es útil para decidir qué porcentaje de genes presenta una variabilidad que podría atribuirse a causas distintas de la variación aleatoria.
+
+La figura  \@ref(fig:sd_distribucion) representa as desviaciones estándar de todos los genes ordenados de menor a mayor valor, siendo aquellos genes con una desviación estándar superior al 90-95% los que se podrían considerar que tienen una variabilidad significativamente mayor que el resto.
+
+
+```{r sd_distribucion, fig.cap="Distribución de la variabilidad genética en orden ascendente. Las líneas verticales representan los percentiles 90 y 95%}
+sds <- apply(exprs(rawData), 1, sd)
+sdsO<- sort(sds)
+plot(1:length(sdsO), sdsO, main="Distribución variabilidad genética", 
+     xlab="Genes", 
+     ylab="Desviación estándar")
+abline(v=length(sds)*c(0.9,0.95))
+```
+
+Para realizar el filtraje de genes expresados diferencialmente, utilizamos el paquete `genefilter`. Para ello necesitamos conocer primero el paquete de anotación que utilizan nuestros datos.
+
+```{r}
+annotation(rawData)
+```
+```{r}
+fun <- function(GDSDataobj){
+  fulltitle<- Meta(GDSDataobj)$title
+  title <- strsplit(fulltitle, "\\[|\\]")[[1]][2]
+  title <- paste0(gsub("_|-| ", "", tolower(title)), ".db")
+  title
+}
+eset <- getGEO("GSE35240")[[1]]
+fun(getGEO(annotation(eset)))
+```
+
+```{r}
+annotation(rawData) <- "drosophila2.db"
+rawData_filter <- nsFilter(rawData,
+                           require.entrez = TRUE, remove.dupEntrez = TRUE,
+                           var.filter = TRUE, var.func = IQR, var.cutoff = 0.75, filterByQuantile = TRUE, feature.exclude="^AFFX" )
+```
+
+
+```{r}
+# # no ha funcionado el .db y he buscado el del chunk anterior
+# require(genefilter)
+# require(mogene21sttranscriptcluster.db) 
+# annotation(rawData) <- "mogene21sttranscriptcluster.db"
+# rawData_filter <- nsFilter(rawData,
+#                            require.entrez = TRUE, remove.dupEntrez = TRUE,
+#                            var.filter = TRUE, var.func = IQR, var.cutoff = 0.75, filterByQuantile = TRUE, feature.exclude="^AFFX" )
+```
+
+
 # Bibliografía
 
 https://www.uv.es/ayala/docencia/tami/tami13.pdf
