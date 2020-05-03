@@ -19,3 +19,5 @@ gplots
 ReactomePA
 AnnotationDbi
 org.Dm.eg.db
+genefilter
+drosophila2.db

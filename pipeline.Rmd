@@ -104,6 +104,7 @@ require(Biobase)
 require(gplots)
 require(ReactomePA)
 require(org.Dm.eg.db)
+require(genefilter)
 
 ```
 
